@@ -1,0 +1,615 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  phone     String   @unique
+  name      String?  @default("")
+  is_active Boolean? @default(true)
+
+  city_id Int?
+  city    City? @relation(fields: [city_id], references: [id])
+
+  created_at    DateTime       @default(now()) @db.Timestamp(0)
+  updated_at    DateTime       @updatedAt @db.Timestamp(0)
+  categoryLogs  CategoryLog[]
+  reports       Report[]
+  productViews  ProductView[]
+  favorites     Favorite[]
+  productClicks ProductClick[]
+
+  @@map("users")
+}
+
+model Province {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  slug String @unique
+
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @updatedAt @db.Timestamp(0)
+
+  cities City[]
+  shops  Shop[]
+
+  @@map("provinces")
+}
+
+model City {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String   @unique
+  province_id Int
+  created_at  DateTime @default(now()) @db.Timestamp(0)
+  updated_at  DateTime @updatedAt @db.Timestamp(0)
+
+  province Province @relation(fields: [province_id], references: [id])
+  shops    Shop[]
+  users    User[]
+
+  @@unique([name, province_id])
+  @@index([province_id])
+  @@map("cities")
+}
+
+model Favorite {
+  id Int @id @default(autoincrement())
+
+  product_id Int
+  product    Product @relation(fields: [product_id], references: [id])
+
+  user_id Int
+  user    User @relation(fields: [user_id], references: [id])
+
+  created_at DateTime @default(now()) @db.Timestamp(0)
+
+  @@unique([user_id, product_id])
+  @@index([user_id])
+  @@map("favorites")
+}
+
+model Category {
+  id             Int            @id @default(autoincrement())
+  title          String
+  slug           String         @unique
+  url String
+  parent_id      Int?
+  created_at     DateTime       @default(now()) @db.Timestamp(0)
+  updated_at     DateTime       @updatedAt
+  parent         Category?      @relation("CategoryTree", fields: [parent_id], references: [id])
+  children       Category[]     @relation("CategoryTree")
+  shopCategories ShopCategory[]
+  categoryLogs   CategoryLog[]
+  products       Product[]
+
+  @@unique([title, parent_id])
+  @@index([parent_id])
+  @@map("categories")
+}
+
+model Business {
+  id    Int    @id @default(autoincrement())
+  value String @unique
+  label String
+
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @updatedAt @db.Timestamp(0)
+
+  shops Shop[]
+
+  @@map("business")
+}
+
+model Shop {
+  id                 Int        @id @default(autoincrement())
+  type               ShopType
+  is_active          Boolean    @default(true)
+  status             ShopStatus
+  shop_name          String     @unique
+  has_license        Boolean
+  business_type_id   Int?
+  businessType       Business?  @relation(fields: [business_type_id], references: [id])
+  domain             String?    @default("")
+  instagram_username String?    @default("")
+  address            String
+  plaque             Int
+  floor              Int
+  unit               Int
+  shop_logo          String
+
+  province_id Int
+  province    Province @relation(fields: [province_id], references: [id])
+
+  city_id Int
+  city    City @relation(fields: [city_id], references: [id])
+
+  owner_id Int
+  owner    ShopOwner @relation(fields: [owner_id], references: [id])
+
+  reject_reason String?
+
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @updatedAt @db.Timestamp(0)
+
+  shopCategories    ShopCategory[]
+  shopContacts      ShopContact[]
+  shopWorkingHours  ShopWorkingHour[]
+  shopImages        ShopImage[]
+  shopVerifications ShopVerification[]
+  reports           Report[]
+  offers            Offer[]
+
+  @@map("shops")
+}
+
+enum ShopType {
+  ONLINE_SHOP
+  OFFLINE_SHOP
+}
+
+enum ShopStatus {
+  PENDING
+  REJECTED
+  VERIFIED
+}
+
+model Product {
+  id      Int    @id @default(autoincrement())
+  name    String
+  name_en String
+  slug    String @unique
+
+  category_id Int
+  category    Category @relation(fields: [category_id], references: [id])
+
+  brand_id Int?
+  brand    Brand? @relation(fields: [brand_id], references: [id])
+
+  created_at            DateTime               @default(now()) @db.Timestamp(0)
+  updated_at            DateTime               @updatedAt @db.Timestamp(0)
+  productImages         ProductImage[]
+  reports               Report[]
+  productVariants       ProductVariant[]
+  offers                Offer[]
+  productViews          ProductView[]
+  favorites             Favorite[]
+  productSpecifications ProductSpecification[]
+  productClicks         ProductClick[]
+
+  @@map("products")
+}
+
+model ProductView {
+  id Int @id @default(autoincrement())
+
+  user_id Int
+  user    User @relation(fields: [user_id], references: [id])
+
+  product_id Int
+  product    Product @relation(fields: [product_id], references: [id])
+
+  created_at DateTime @default(now()) @db.Timestamp(0)
+
+  @@unique([product_id, user_id])
+  @@index([user_id])
+  @@index([product_id])
+  @@map("productViews")
+}
+
+model ProductClick {
+  id    Int  @id @default(autoincrement())
+  count Int? @default(1)
+
+  product_id Int
+  product    Product @relation(fields: [product_id], references: [id])
+
+  user_id Int
+  user    User @relation(fields: [user_id], references: [id])
+
+  offer_id Int
+  offer    Offer @relation(fields: [offer_id], references: [id])
+
+  created_at DateTime @default(now()) @db.Timestamp(0)
+
+  @@index([product_id])
+  @@index([offer_id])
+  @@map("productClicks")
+}
+
+model ProductVariant {
+  id Int @id @default(autoincrement())
+
+  product_id Int
+  product    Product @relation(fields: [product_id], references: [id])
+
+  title String
+
+  offers Offer[]
+
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @updatedAt @db.Timestamp(0)
+
+  @@index([product_id])
+  @@map("productVariants")
+}
+
+model ProductImage {
+  id      Int      @id @default(autoincrement())
+  url     String
+  is_main Boolean? @default(false)
+
+  product_id Int
+  product    Product @relation(fields: [product_id], references: [id])
+
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @updatedAt @db.Timestamp(0)
+
+  @@map("productImages")
+}
+
+model ProductSpecification {
+  id Int @id @default(autoincrement())
+
+  key   String
+  value String
+  type  SpecificationType
+
+  product_id Int
+  product    Product @relation(fields: [product_id], references: [id])
+
+  @@map("productSpecifications")
+}
+
+enum SpecificationType {
+  KEY
+  GENERAL
+}
+
+model Warranty {
+  id Int @id @default(autoincrement())
+
+  title String
+
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @updatedAt @db.Timestamp(0)
+  offers     Offer[]
+
+  @@map("warranties")
+}
+
+model ShopImage {
+  id      Int      @id @default(autoincrement())
+  url     String
+  is_main Boolean? @default(true)
+
+  shop_id Int
+  shop    Shop @relation(fields: [shop_id], references: [id])
+
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @updatedAt @db.Timestamp(0)
+
+  @@map("shopImages")
+}
+
+model ShopOwner {
+  id            Int      @id @default(autoincrement())
+  first_name    String
+  last_name     String
+  national_code String   @unique
+  mobile_phone  String
+  birth_date    DateTime @db.Date
+
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @updatedAt @db.Timestamp(0)
+  shops      Shop[]
+
+  @@map("shopOwners")
+}
+
+model ShopCategory {
+  shop_id     Int
+  category_id Int
+
+  shop     Shop     @relation(fields: [shop_id], references: [id])
+  category Category @relation(fields: [category_id], references: [id])
+
+  @@id([shop_id, category_id])
+  @@map("shopCategories")
+}
+
+model ShopContact {
+  id Int @id @default(autoincrement())
+
+  shop_id Int
+  shop    Shop @relation(fields: [shop_id], references: [id])
+
+  type  ContactType
+  value String
+
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @updatedAt
+
+  @@index([shop_id])
+  @@map("shop_contacts")
+}
+
+enum ContactType {
+  PHONE
+  WHATSAPP
+  TELEGRAM
+  BALE
+}
+
+model ShopWorkingHour {
+  id Int @id @default(autoincrement())
+
+  day          DayOfWeek
+  shift_number Int
+
+  start_time DateTime
+  end_time   DateTime
+
+  shop_id Int
+  shop    Shop @relation(fields: [shop_id], references: [id])
+
+  @@unique([shop_id, day, shift_number])
+}
+
+enum DayOfWeek {
+  SATURDAY
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+}
+
+model ShopVerification {
+  id Int @id @default(autoincrement())
+
+  shop_id Int
+  shop    Shop @relation(fields: [shop_id], references: [id])
+
+  section VerificationSection
+  status  VerificationStatus  @default(PENDING_FILLING)
+
+  rejection_reason String?
+
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @updatedAt @db.Timestamp(0)
+
+  @@unique([shop_id, section])
+  @@index([shop_id])
+  @@map("shop_verifications")
+}
+
+enum VerificationSection {
+  LOCATION
+  OWNER_INFO
+  PHONE
+  CONTACT_INFO
+  IMAGES
+  CATEGORY
+  NAME
+  DAILY_WORKING_HOURS
+  BUSINESS_TYPE
+  INSTAGRAM_USERNAME
+}
+
+enum VerificationStatus {
+  PENDING_FILLING
+  PENDING_REVIEW
+  VERIFIED
+  REJECTED
+}
+
+model Brand {
+  id   Int    @id @default(autoincrement())
+  name String
+  slug String
+
+  created_at DateTime  @default(now()) @db.Timestamp(0)
+  updated_at DateTime  @updatedAt @db.Timestamp(0)
+  products   Product[]
+
+  @@unique([slug])
+  @@map("brands")
+}
+
+model CategoryLog {
+  id Int @id @default(autoincrement())
+
+  user_id     Int
+  category_id Int
+
+  count Int @default(1)
+
+  user     User     @relation(fields: [user_id], references: [id])
+  category Category @relation(fields: [category_id], references: [id])
+
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @updatedAt @db.Timestamp(0)
+
+  @@unique([user_id, category_id])
+  @@index([category_id])
+  @@index([user_id])
+  @@map("categoryLog")
+}
+
+model Badge {
+  id Int @id @default(autoincrement())
+
+  offer_id Int
+  offer    Offer @relation(fields: [offer_id], references: [id], onDelete: Cascade)
+
+  type    BadgeType
+  text    String
+  icon    String?
+  tooltip String?
+
+  created_at DateTime @default(now())
+
+  @@index([offer_id])
+  @@map("badges")
+}
+
+enum BadgeType {
+  STOCK_STATUS
+  DISCOUNT
+  SHIPPING
+  AUTHENTIC
+  SPECIAL
+}
+
+model Offer {
+  id Int @id @default(autoincrement())
+
+  product_id Int
+  product    Product @relation(fields: [product_id], references: [id])
+
+  variant_id Int?
+  variant    ProductVariant? @relation(fields: [variant_id], references: [id])
+
+  shop_id Int
+  shop    Shop @relation(fields: [shop_id], references: [id])
+
+  price         BigInt
+  description   String
+  stock_status  String?  @default("")
+  more_info_url String?  @default("")
+  is_active     Boolean? @default(true)
+  is_available  Boolean? @default(true)
+
+  warranty_id Int
+  warranty    Warranty @relation(fields: [warranty_id], references: [id])
+
+  warranty_duration Int?
+
+  created_at    DateTime       @default(now()) @db.Timestamp(0)
+  updated_at    DateTime       @updatedAt @db.Timestamp(0)
+  badges        Badge[]
+  offerImages   OfferImage[]
+  offerVideos   OfferVideo[]
+  productClicks ProductClick[]
+
+  @@unique([product_id, variant_id, shop_id])
+  @@index([product_id])
+  @@map("offers")
+}
+
+model OfferImage {
+  id      Int      @id @default(autoincrement())
+  url     String
+  is_main Boolean? @default(true)
+
+  offer_id Int
+  offer    Offer @relation(fields: [offer_id], references: [id])
+
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @updatedAt @db.Timestamp(0)
+
+  @@map("offerImages")
+}
+
+model OfferVideo {
+  id      Int      @id @default(autoincrement())
+  url     String
+  is_main Boolean? @default(true)
+
+  offer_id Int
+  offer    Offer @relation(fields: [offer_id], references: [id])
+
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @updatedAt @db.Timestamp(0)
+
+  @@map("offerVideos")
+}
+
+model ReportReason {
+  id Int @id @default(autoincrement())
+
+  title             String
+  type              ReportReasonType
+  shop_type         ShopType
+  report_type       ReportType?
+  needs_description Boolean          @default(false)
+
+  parent_id Int?
+
+  parent   ReportReason?  @relation("ReportReasonTree", fields: [parent_id], references: [id])
+  children ReportReason[] @relation("ReportReasonTree")
+
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @updatedAt @db.Timestamp(0)
+  reports    Report[]
+
+  @@index([parent_id])
+  @@index([shop_type])
+  @@map("reportReasons")
+}
+
+enum ReportType {
+  PRICE_CHANGE_AFTER_ORDER
+  AVAILABILITY_CHANGE_AFTER_ORDER
+  INCORRECT_SHOP_INFO
+  PRODUCT_INFO_MISMATCH
+  FREE_SHIPPING
+  SAME_DAY_DELIVERY
+  PAYMENT_ON_DELIVERY
+  IRREGULAR_SHIPPING_COST_AS_PRICE_REPORT
+  OTHER
+}
+
+enum ReportReasonType {
+  OPTION
+  OPTION_LIST
+  REDIRECT_TO_COMPLAINT
+}
+
+model Report {
+  id Int @id @default(autoincrement())
+
+  user_id Int
+  user    User @relation(fields: [user_id], references: [id])
+
+  shop_id Int
+  shop    Shop @relation(fields: [shop_id], references: [id])
+
+  product_id Int
+  product    Product @relation(fields: [product_id], references: [id])
+
+  report_reason_id Int
+  reportReason     ReportReason @relation(fields: [report_reason_id], references: [id])
+
+  description          String? @db.Text
+  price_at_report_time Int
+
+  status ReportStatus @default(PENDING)
+
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @updatedAt @db.Timestamp(0)
+
+  @@index([user_id])
+  @@index([shop_id])
+  @@map("reports")
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  REJECTED
+}
