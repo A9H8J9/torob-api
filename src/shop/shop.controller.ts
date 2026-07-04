@@ -1,4 +1,12 @@
-import { Controller, Get, Post } from '@nestjs/common';
+import {
+  Controller,
+  DefaultValuePipe,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ShopService } from './shop.service';
 
 @Controller('shops')
@@ -6,13 +14,21 @@ export class ShopController {
   constructor(private shopService: ShopService) {}
 
   @Get()
-  async all() {}
+  async all(
+    @Query('q') q: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+  ) {
+    return await this.shopService.all(q, page, limit);
+  }
 
   @Get(':shop_id/:slug')
   async get() {}
 
-  @Get(':shop_id/:slug/products')
-  async shopProducts() {}
+  @Get(':shop_id/products')
+  async shopProducts(@Param('shop_id', ParseIntPipe) shop_id: number) {
+    return await this.shopService.shopProducts(shop_id)
+  }
 
   @Post()
   async create() {}
