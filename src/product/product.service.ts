@@ -50,7 +50,7 @@ export class ProductService {
       }),
     ]);
     return {
-      data: product,
+      data: products,
       pagination: {
         page: page,
         limit: limit,
