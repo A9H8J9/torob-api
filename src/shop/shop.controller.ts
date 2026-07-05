@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   DefaultValuePipe,
   Get,
@@ -8,6 +9,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ShopService } from './shop.service';
+import { GetShopProductsDto } from './shop.dto';
 
 @Controller('shops')
 export class ShopController {
@@ -26,8 +28,11 @@ export class ShopController {
   async get() {}
 
   @Get(':shop_id/products')
-  async shopProducts(@Param('shop_id', ParseIntPipe) shop_id: number) {
-    return await this.shopService.shopProducts(shop_id)
+  async shopProducts(
+    @Param('shop_id', ParseIntPipe) shop_id: number,
+    @Body() data: GetShopProductsDto,
+  ) {
+    return await this.shopService.shopProducts(shop_id, data);
   }
 
   @Post()
