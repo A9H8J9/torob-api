@@ -5,19 +5,35 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class CategoryService {
   constructor(private prisma: PrismaService) {}
 
-  private buildCategoryTree(
-    categories: any[],
-    parent_id: number | null = null,
-  ) {
-    return categories
-      .filter((category) => category.parent_id === parent_id)
-      .map((category) => ({
+  private buildCategoryTree(categories: any[]) {
+    const map = new Map<number, any>();
+
+    for (const category of categories) {
+      map.set(category.id, {
         id: category.id,
         title: category.title,
         url: category.url,
         parent_id: category.parent_id,
-        children: this.buildCategoryTree(categories, category.id),
-      }));
+        children: [],
+      });
+    }
+
+    const tree: any[] = [];
+
+    for (const category of categories) {
+      const node = map.get(category.id);
+
+      if (category.parent_id) {
+        const parent = map.get(category.parent_id);
+        if (parent) {
+          parent.children.push(node);
+        }
+      } else {
+        tree.push(node);
+      }
+    }
+
+    return tree;
   }
 
   async all() {
