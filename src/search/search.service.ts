@@ -443,6 +443,325 @@ export class SearchService {
     };
   }
 
+  async getCategoryBreadcrumb(categoryId: number) {
+    const rows = await this.prisma.$queryRaw<{ id: number; name: string }[]>`
+      WITH RECURSIVE tree AS (
+        SELECT id, name, parent_id, 0 as level
+        FROM "categories"
+        WHERE id = ${categoryId}
+  
+        UNION ALL
+  
+        SELECT c.id, c.name, c.parent_id, t.level + 1
+        FROM "categories" c
+        JOIN tree t ON t.parent_id = c.id
+      )
+      SELECT id, name
+      FROM tree
+      ORDER BY level DESC;
+    `;
+
+    return {
+      categories: rows.map((r) => ({
+        id: r.id,
+        title: r.name,
+      })),
+    };
+  }
+
+  async searchCategory(
+    page: number,
+    limit: number,
+    shop_type?: string,
+    stock_status?: string,
+    is_available?: boolean,
+    sort?: SearchSortEnum,
+    price_gt?: number,
+    price_lt?: number,
+    query?: string,
+    category_id?: number,
+    brand_id?: number,
+    specifications?: Record<string, string[]>,
+  ) {
+    const category = await this.prisma.category.findUnique({
+      where: {
+        id: category_id,
+      },
+    });
+    if (!category) {
+      throw new NotFoundException('category not found');
+    }
+    const categories = await this.getCategoryBreadcrumb(category.id);
+    const similar_categories = await this.prisma.category.findMany({
+      where: {
+        parent_id: category.parent_id,
+        id: {
+          not: category.id,
+        },
+      },
+    });
+    const where: Prisma.ProductWhereInput = {
+      category_id,
+    };
+    if (query) {
+      where.OR = [
+        {
+          name: query,
+        },
+        {
+          name_en: query,
+        },
+      ];
+    }
+    if (brand_id) {
+      where.brand_id = brand_id;
+    }
+    if (specifications && Object.keys(specifications).length > 0) {
+      where.AND = Object.entries(specifications).map(([key, values]) => ({
+        productSpecifications: {
+          some: {
+            key,
+            value: {
+              in: values,
+            },
+          },
+        },
+      }));
+    }
+    const offerWhere: Prisma.OfferWhereInput = {
+      is_active: true,
+    };
+    if (is_available) {
+      offerWhere.is_available = true;
+    }
+    if (price_gt || price_lt) {
+      offerWhere.price = {};
+
+      if (price_gt) offerWhere.price.gte = price_gt;
+      if (price_lt) offerWhere.price.lte = price_lt;
+    }
+
+    if (shop_type) {
+      offerWhere.shop = {
+        type: 'OFFLINE_SHOP',
+      };
+    }
+    if (stock_status === 'new') offerWhere.stock_status = '';
+    if (stock_status === 'stock') offerWhere.stock_status = 'کارکرده';
+    let productOrderBy: Prisma.ProductOrderByWithRelationInput = {};
+    let offerOrderBy: Prisma.OfferOrderByWithRelationInput = {
+      price: 'asc',
+    };
+
+    switch (sort) {
+      case SearchSortEnum.popularity:
+        productOrderBy = {
+          view_count: 'desc',
+        };
+        break;
+
+      case SearchSortEnum.price_asc:
+        offerOrderBy = {
+          price: 'asc',
+        };
+        break;
+
+      case SearchSortEnum.price_desc:
+        offerOrderBy = {
+          price: 'desc',
+        };
+        break;
+
+      case SearchSortEnum.new:
+        productOrderBy = {
+          created_at: 'desc',
+        };
+        break;
+
+      case SearchSortEnum.top_seller:
+        productOrderBy = {
+          offer_count: 'desc',
+        };
+        break;
+    }
+    const [products, total] = await this.prisma.$transaction([
+      this.prisma.product.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: productOrderBy,
+        include: {
+          brand: true,
+          productImages: true,
+          productSpecifications: true,
+          offers: {
+            where: offerWhere,
+            orderBy: offerOrderBy,
+            include: {
+              shop: true,
+            },
+          },
+        },
+      }),
+
+      this.prisma.product.count({ where }),
+    ]);
+    const brandMap = new Map();
+
+    for (const product of products) {
+      if (!product.brand) continue;
+
+      if (!brandMap.has(product.brand.id)) {
+        brandMap.set(product.brand.id, {
+          id: product.brand.id,
+          slug: product.brand.slug,
+          name1: product.brand.name,
+          name2: product.brand.name_en,
+        });
+      }
+    }
+
+    const brands = Array.from(brandMap.values());
+
+    const selectedBrand = brands.find((brand) => brand.id === brand_id);
+
+    const specMap = new Map<string, Set<string>>();
+
+    for (const product of products) {
+      for (const spec of product.productSpecifications) {
+        if (!specMap.has(spec.key)) {
+          specMap.set(spec.key, new Set());
+        }
+
+        specMap.get(spec.key)?.add(spec.value);
+      }
+    }
+
+    const specFilters = Array.from(specMap.entries()).map(([key, values]) => ({
+      title: key,
+      slug: key,
+      type: 'multi_choice',
+      badge_text: specifications?.[key]?.join(', ') || '',
+      items: Array.from(values).map((value) => ({
+        value,
+      })),
+    }));
+
+    const prices = products.flatMap((product) =>
+      product.offers.map((offer) => Number(offer.price)),
+    );
+
+    const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+
+    const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
+    return {
+      type: 'category_product',
+      title: `${category.title} (${category.slug})`,
+      data: products,
+      similar_categories,
+      categories: categories,
+      filters1: [
+        {
+          title: 'انتخاب برند',
+          slug: 'brand',
+          type: 'brand',
+          badge_text: selectedBrand ? selectedBrand.name1 : '',
+          items: brands,
+        },
+        ...specFilters,
+        {
+          title: 'قیمت',
+          slug: 'price',
+          type: 'price',
+          badge_text: `از ${price_gt || Number(minPrice)} تا ${price_lt || Number(maxPrice)}`,
+          items: [
+            {
+              value: Number(minPrice),
+              slug: 'price_gt',
+            },
+            {
+              value: Number(maxPrice),
+              slug: 'price_lt',
+            },
+          ],
+        },
+        {
+          title: 'جستجو در نتایج',
+          slug: 'query',
+          type: 'query',
+        },
+      ],
+      filters2: [
+        {
+          title: 'امکان خرید حضوری',
+          slug: 'shop_type',
+          type: 'toggle',
+          items: [
+            {
+              name: 'محصولات دارای فروشنده حضوری',
+              value: 'offline',
+            },
+          ],
+        },
+        {
+          title: 'وضعیت کارکرد',
+          slug: 'stock_status',
+          type: 'single_choice',
+          badge_text: stock_status === 'new' ? 'نو' : 'کارکرده',
+          items: [
+            {
+              name: 'نو',
+              value: 'new',
+            },
+            {
+              name: 'کارکرده',
+              value: 'stock',
+            },
+          ],
+        },
+        {
+          title: 'فقط موجودها',
+          slug: 'is_available',
+          type: 'toggle',
+        },
+        {
+          title: 'مرتب‌سازی',
+          slug: 'sort',
+          type: 'dropdown',
+          badge_text: sort ? SortTitles[sort] : '',
+          items: [
+            {
+              name: 'محبوب‌ترین',
+              value: 'popularity',
+            },
+            {
+              name: 'ارزان‌ترین',
+              value: 'price_asc',
+            },
+            {
+              name: 'گران‌ترین',
+              value: 'price_desc',
+            },
+            {
+              name: 'جدیدترین',
+              value: 'new',
+            },
+            {
+              name: 'بیشترین فروشنده',
+              value: 'top_seller',
+            },
+          ],
+        },
+      ],
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
   async search(
     {
       sort,
@@ -456,6 +775,7 @@ export class SearchService {
       stock_status,
       price_lt,
       brand_id,
+      category_id,
     }: SearchDto,
     specifications?: Record<string, string[]>,
   ) {
@@ -481,6 +801,22 @@ export class SearchService {
         sort,
         price_gt,
         price_lt,
+        brand_id,
+        specifications,
+      );
+    }
+    if (type === SearchTypeEnum.category) {
+      return this.searchCategory(
+        page,
+        limit,
+        shop_type,
+        stock_status,
+        is_available,
+        sort,
+        price_gt,
+        price_lt,
+        query,
+        category_id,
         brand_id,
         specifications,
       );

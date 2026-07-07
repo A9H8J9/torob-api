@@ -81,4 +81,9 @@ export class SearchDto {
   @IsOptional()
   @IsInt()
   brand_id: number;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsInt()
+  category_id: number;
 }
