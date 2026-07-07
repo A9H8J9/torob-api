@@ -10,9 +10,8 @@ import { ReportModule } from './report/report.module';
 import { LocationModule } from './location/location.module';
 import { SearchModule } from './search/search.module';
 import { ProductModule } from './product/product.module';
-import { PriceAlertModule } from './price-alert/price-alert.module';
-import { PrismaService } from './prisma/prisma.service';
 import { PrismaModule } from './prisma/prisma.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -27,9 +26,8 @@ import { PrismaModule } from './prisma/prisma.module';
     LocationModule,
     SearchModule,
     ProductModule,
-    PriceAlertModule,
     PrismaModule,
+    AnalyticsModule,
   ],
-  providers: [PrismaService],
 })
 export class AppModule {}
