@@ -12,6 +12,7 @@ import { SearchModule } from './search/search.module';
 import { ProductModule } from './product/product.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { PanelModule } from './panel/panel.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
     ProductModule,
     PrismaModule,
     AnalyticsModule,
+    PanelModule,
   ],
 })
 export class AppModule {}
