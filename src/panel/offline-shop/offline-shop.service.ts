@@ -10,7 +10,13 @@ import {
   ChangeBlockStatusEnum,
   CreateLocationDto,
 } from './offline-shop.dto';
-import { DayOfWeek, Prisma, VerificationSection } from '@prisma/client';
+import {
+  BusinessLicenseType,
+  ContactType,
+  DayOfWeek,
+  Prisma,
+  VerificationSection,
+} from '@prisma/client';
 
 @Injectable()
 export class OfflineShopService {
@@ -30,9 +36,7 @@ export class OfflineShopService {
         shopMembers: {
           where: {
             user_id,
-          },
-          select: {
-            id: true,
+            is_deleted: false,
           },
         },
       },
@@ -244,7 +248,7 @@ export class OfflineShopService {
     };
   }
 
-  async info(shop_id: number, user_id: number) {
+  async getInfo(shop_id: number, user_id: number) {
     const shop = await this.getShopMember(shop_id, user_id, {
       shop_name: true,
       shop_logo: true,
@@ -289,6 +293,219 @@ export class OfflineShopService {
           logo: item.shop.shop_logo,
         };
       }),
+    };
+  }
+
+  async getImages(shop_id: number, user_id: number) {
+    const shop = await this.getShopMember(shop_id, user_id, {
+      shopImages: {
+        select: {
+          id: true,
+          url: true,
+          is_main: true,
+        },
+      },
+    });
+    return shop.shopImages;
+  }
+
+  async getInstagramUserName(shop_id: number, user_id: number) {
+    const shop = await this.getShopMember(shop_id, user_id, {
+      instagram_username: true,
+    });
+    return shop.instagram_username;
+  }
+
+  async getContactInfo(shop_id: number, user_id: number) {
+    const shop = await this.getShopMember(shop_id, user_id, {
+      shopContacts: {
+        select: {
+          type: true,
+          platform: true,
+          value: true,
+        },
+      },
+    });
+    const phone = shop.shopContacts.find(
+      (item) => item.type === ContactType.PHONE,
+    );
+
+    const messengers = shop.shopContacts
+      .filter((item) => item.type === ContactType.MESSENGER)
+      .map((item) => ({
+        platform: item.platform.toLowerCase(),
+        value: item.value,
+      }));
+
+    const socialMedias = shop.shopContacts
+      .filter((item) => item.type === ContactType.SOCIAL_MEDIA)
+      .map((item) => ({
+        platform: item.platform.toLowerCase(),
+        value: item.value,
+      }));
+
+    return {
+      phone: phone?.value ?? null,
+      messengers,
+      social_medias: socialMedias,
+    };
+  }
+
+  async getNationalCard(shop_id: number, user_id: number) {
+    const shop = await this.getShopMember(shop_id, user_id, {
+      shopDocuments: {
+        where: {
+          section: 'NATIONAL_CARD',
+        },
+        select: {
+          document_url: true,
+        },
+      },
+    });
+    return shop.shopDocuments;
+  }
+
+  async getAddressVerification(shop_id: number, user_id: number) {
+    const shop = await this.getShopMember(shop_id, user_id, {
+      shopDocuments: {
+        where: {
+          section: 'ADDRESS_VERIFICATION',
+        },
+        select: {
+          document_url: true,
+        },
+      },
+    });
+    return shop.shopDocuments;
+  }
+
+  async getVerificationVideo(shop_id: number, user_id: number) {
+    const shop = await this.getShopMember(shop_id, user_id, {
+      shopDocuments: {
+        where: {
+          section: 'AUTHENTICATION_VIDEO',
+        },
+        select: {
+          document_url: true,
+        },
+      },
+    });
+    return shop.shopDocuments;
+  }
+
+  async getBusinessLicense(shop_id: number, type: string, user_id: number) {
+    let businessType: BusinessLicenseType | undefined;
+
+    switch (type) {
+      case 'national-license':
+        businessType = BusinessLicenseType.NATIONAL_PERMITS_SYSTEM;
+        break;
+
+      case 'iranian-asnaf':
+        businessType = BusinessLicenseType.IRANIAN_ASNAF;
+        break;
+
+      case 'pharmacy-license':
+        businessType = BusinessLicenseType.PHARMACY_LICENSE;
+        break;
+
+      default:
+        throw new BadRequestException('invalid business license type');
+    }
+
+    const shop = await this.getShopMember(shop_id, user_id, {
+      shopDocuments: {
+        where: {
+          section: VerificationSection.BUSINESS_LICENSE,
+          business_license_type: businessType,
+        },
+        select: {
+          document_url: true,
+        },
+      },
+    });
+
+    return {
+      document_url: shop.shopDocuments[0]?.document_url ?? null,
+    };
+  }
+
+  async getPermissions(shop_id: number, user_id: number) {
+    const shop = await this.prisma.shop.findUnique({
+      where: {
+        id: shop_id,
+      },
+      select: {
+        shopMembers: {
+          select: {
+            user_id: true,
+            is_owner: true,
+            is_admin: true,
+            is_deleted: true,
+
+            user: {
+              select: {
+                name: true,
+                phone: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!shop) {
+      throw new NotFoundException('shop not found');
+    }
+
+    const currentMember = shop.shopMembers.find(
+      (member) => member.user_id === user_id,
+    );
+
+    if (!currentMember) {
+      throw new ForbiddenException('you are not a member of this shop');
+    }
+
+    if (currentMember.is_deleted) {
+      throw new ForbiddenException('you do not have permission');
+    }
+
+    const users = shop.shopMembers.map((member) => {
+      const access: string[] = [];
+
+      if (member.is_owner) {
+        access.push('صاحب امتیاز');
+      }
+
+      if (member.is_admin) {
+        access.push('ادمین');
+      }
+
+      return {
+        access,
+
+        name: `${member.user.name ?? ''}`,
+
+        phone: member.user.phone,
+
+        is_current_user: member.user_id === user_id,
+
+        can_remove: currentMember.is_owner
+          ? member.user_id !== user_id
+          : member.user_id === user_id,
+
+        is_deleted: member.is_deleted,
+      };
+    });
+
+    return {
+      current_user_permissions: {
+        is_owner: currentMember.is_owner,
+        is_admin: currentMember.is_admin,
+        is_deleted: currentMember.is_deleted,
+      },
+
+      users,
     };
   }
 }

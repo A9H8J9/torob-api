@@ -73,10 +73,18 @@ export class OfflineShopController {
   }
 
   @Get(':shop_id/categories')
-  async categories() {}
+  async getCategories() {}
 
   @Get(':shop_id/images')
-  async images() {}
+  async getImages(
+    @Req() request,
+    @Param('shop_id', ParseIntPipe) shop_id: number,
+  ) {
+    return await this.offlineShopService.getImages(
+      shop_id,
+      request.user.userId,
+    );
+  }
 
   @Get(':shop_id/business-type')
   async getBusinessType(
@@ -90,21 +98,91 @@ export class OfflineShopController {
   }
 
   @Get(':shop_id/contact-info')
-  async contactInfo() {}
-
-  @Get(':shop_id/info')
-  async info(@Req() request, @Param('shop_id', ParseIntPipe) shop_id: number) {
-    return await this.offlineShopService.info(shop_id, request.user.userId);
+  async getContactInfo(
+    @Req() request,
+    @Param('shop_id', ParseIntPipe) shop_id: number,
+  ) {
+    return await this.offlineShopService.getContactInfo(
+      shop_id,
+      request.user.userId,
+    );
   }
 
-  @Get(':shop_id/national-card')
-  async nationalCard() {}
+  @Get(':shop_id/info')
+  async getInfo(
+    @Req() request,
+    @Param('shop_id', ParseIntPipe) shop_id: number,
+  ) {
+    return await this.offlineShopService.getInfo(shop_id, request.user.userId);
+  }
+
+  @Get(':shop_id/certificate/national-card')
+  async getNationalCard(
+    @Req() request,
+    @Param('shop_id', ParseIntPipe) shop_id: number,
+  ) {
+    return await this.offlineShopService.getNationalCard(
+      shop_id,
+      request.user.userId,
+    );
+  }
+
+  @Get(':shop_id/certificate/address')
+  async getAddressVerification(
+    @Req() request,
+    @Param('shop_id', ParseIntPipe) shop_id: number,
+  ) {
+    return await this.offlineShopService.getAddressVerification(
+      shop_id,
+      request.user.userId,
+    );
+  }
+
+  @Get(':shop_id/certificate/video')
+  async getVerificationVideo(
+    @Req() request,
+    @Param('shop_id', ParseIntPipe) shop_id: number,
+  ) {
+    return await this.offlineShopService.getVerificationVideo(
+      shop_id,
+      request.user.userId,
+    );
+  }
+
+  @Get(':shop_id/certificate/:type')
+  async getBusinessLicense(
+    @Req() request,
+    @Param('shop_id', ParseIntPipe) shop_id: number,
+    @Param('type') type: string,
+  ) {
+    return await this.offlineShopService.getBusinessLicense(
+      shop_id,
+      type,
+      request.user.userId,
+    );
+  }
 
   @Get(':shop_id/instagram-username')
-  async instagramUsername() {}
+  async getInstagramUserName(
+    @Req() request,
+    @Param('shop_id', ParseIntPipe) shop_id: number,
+  ) {
+    return await this.offlineShopService.getInstagramUserName(
+      shop_id,
+      request.user.userId,
+    );
+  }
 
   @Get(':shop_id/permissions')
-  async permissions() {}
+  async getPermissions(
+    @Req() request,
+    @Param('shop_id', ParseIntPipe) shop_id: number,
+  ) {
+    return await this.offlineShopService.getPermissions(
+      shop_id,
+      request.user.userId,
+    );
+  }
 
   @Get('my-shops')
   async myShops(@Req() request) {
@@ -118,6 +196,7 @@ export class OfflineShopController {
       request.user.userId,
     );
   }
+
   @Post('working-hours')
   async createWorkingHours() {}
 
