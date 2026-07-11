@@ -153,6 +153,7 @@ model Shop {
   reports           Report[]
   offers            Offer[]
   shopMembers       ShopMember[]
+  shopDocuments     ShopDocument[]
 
   @@map("shops")
 }
@@ -338,26 +339,33 @@ model ShopCategory {
 }
 
 model ShopContact {
-  id Int @id @default(autoincrement())
+  id       Int             @id @default(autoincrement())
+  type     ContactType
+  platform ContactPlatform
+  value    String
 
   shop_id Int
   shop    Shop @relation(fields: [shop_id], references: [id])
-
-  type  ContactType
-  value String
 
   created_at DateTime @default(now()) @db.Timestamp(0)
   updated_at DateTime @updatedAt
 
   @@index([shop_id])
-  @@map("shop_contacts")
+  @@map("shopContacts")
 }
 
 enum ContactType {
   PHONE
+  MESSENGER
+  SOCIAL_MEDIA
+}
+
+enum ContactPlatform {
+  PHONE
+  BALE
   WHATSAPP
   TELEGRAM
-  BALE
+  INSTAGRAM
 }
 
 model ShopWorkingHour {
@@ -383,6 +391,29 @@ enum DayOfWeek {
   WEDNESDAY
   THURSDAY
   FRIDAY
+}
+
+model ShopDocument {
+  id                    Int                  @id @default(autoincrement())
+  document_url          String
+  section               VerificationSection
+  business_license_type BusinessLicenseType?
+
+  shop_id Int
+  shop    Shop @relation(fields: [shop_id], references: [id])
+
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @updatedAt @db.Timestamp(0)
+
+  @@unique([shop_id, section])
+  @@index([shop_id])
+  @@map("shopDocuments")
+}
+
+enum BusinessLicenseType {
+  NATIONAL_PERMITS_SYSTEM
+  IRANIAN_ASNAF
+  PHARMACY_LICENSE
 }
 
 model ShopVerification {
@@ -415,6 +446,10 @@ enum VerificationSection {
   DAILY_WORKING_HOURS
   BUSINESS_TYPE
   INSTAGRAM_USERNAME
+  NATIONAL_CARD
+  ADDRESS_VERIFICATION
+  AUTHENTICATION_VIDEO
+  BUSINESS_LICENSE
 }
 
 enum VerificationStatus {
@@ -425,12 +460,12 @@ enum VerificationStatus {
 }
 
 model ShopMember {
-  id       Int     @id @default(autoincrement())
-  is_owner Boolean @default(false)
-  is_admin Boolean @default(false)
-
-  user_id Int
-  user    User @relation(fields: [user_id], references: [id])
+  id         Int     @id @default(autoincrement())
+  is_owner   Boolean @default(false)
+  is_admin   Boolean @default(false)
+  is_deleted Boolean @default(false)
+  user_id    Int
+  user       User    @relation(fields: [user_id], references: [id])
 
   shop_id Int
   shop    Shop @relation(fields: [shop_id], references: [id])
