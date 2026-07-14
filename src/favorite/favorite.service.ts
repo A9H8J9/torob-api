@@ -6,11 +6,17 @@ import { CreateFavoriteDto } from './favorite.dto';
 export class FavoriteService {
   constructor(private prisma: PrismaService) {}
 
-  async all(user_id: number) {
-    return await this.prisma.favorite.findMany({
-      where: {
-        user_id,
-      },
+  async all(user_id: number, only_ids: boolean) {
+    if (only_ids) {
+      return this.prisma.favorite.findMany({
+        where: { user_id },
+        select: {
+          product_id: true,
+        },
+      });
+    }
+    return this.prisma.favorite.findMany({
+      where: { user_id },
       include: {
         product: {
           include: {

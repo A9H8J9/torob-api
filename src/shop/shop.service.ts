@@ -45,20 +45,7 @@ export class ShopService {
     };
   }
 
-  async shopProducts(
-    shop_id: number,
-    {
-      limit,
-      page,
-      shop_type,
-      sort,
-      stock_status,
-      is_available,
-      price_gt,
-      price_lt,
-      query,
-    }: GetShopProductsDto,
-  ) {
+  async shopProducts(shop_id: number, { limit, page, shop_type, sort, stock_status, is_available, price_gt, price_lt, query }: GetShopProductsDto) {
     const shop = await this.prisma.shop.findFirst({
       where: {
         id: shop_id,

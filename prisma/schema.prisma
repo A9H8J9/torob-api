@@ -28,9 +28,9 @@ model User {
   reports             Report[]
   productViews        ProductView[]
   favorites           Favorite[]
-  productClicks       ProductClick[]
+  offerClicks         OfferClick[]
   userSearchHistories UserSearchHistory[]
-  priceWatches        PriceWatch[]
+  alerts              Alert[]
   shopMembers         ShopMember[]
 
   @@map("users")
@@ -192,9 +192,8 @@ model Product {
   productViews          ProductView[]
   favorites             Favorite[]
   productSpecifications ProductSpecification[]
-  productClicks         ProductClick[]
-  priceWatches          PriceWatch[]
-  productPriceCharts    ProductPriceChart[]
+  alerts                Alert[]
+  productPriceHistory   ProductPriceHistory[]
 
   @@map("products")
 }
@@ -216,13 +215,8 @@ model ProductView {
   @@map("productViews")
 }
 
-model ProductClick {
-  id    Int @id @default(autoincrement())
-  count Int @default(1)
-
-  product_id Int
-  product    Product @relation(fields: [product_id], references: [id])
-
+model OfferClick {
+  id      Int  @id @default(autoincrement())
   user_id Int
   user    User @relation(fields: [user_id], references: [id])
 
@@ -231,9 +225,8 @@ model ProductClick {
 
   created_at DateTime @default(now()) @db.Timestamp(0)
 
-  @@index([product_id])
   @@index([offer_id])
-  @@map("productClicks")
+  @@map("offerClicks")
 }
 
 model ProductVariant {
@@ -246,9 +239,9 @@ model ProductVariant {
 
   offers Offer[]
 
-  created_at   DateTime     @default(now()) @db.Timestamp(0)
-  updated_at   DateTime     @updatedAt @db.Timestamp(0)
-  priceWatches PriceWatch[]
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @updatedAt @db.Timestamp(0)
+  alerts     Alert[]
 
   @@index([product_id])
   @@map("productVariants")
@@ -564,7 +557,7 @@ model Offer {
   badges         Badge[]
   offerImages    OfferImage[]
   offerVideos    OfferVideo[]
-  productClicks  ProductClick[]
+  offerClicks    OfferClick[]
   offerHistories OfferHistory[]
 
   @@unique([product_id, variant_id, shop_id])
@@ -705,7 +698,7 @@ model SearchLog {
   @@map("searchLogs")
 }
 
-model PriceWatch {
+model Alert {
   id                 Int      @id @default(autoincrement())
   watch_price        Int?
   disabled           Boolean  @default(false)
@@ -724,7 +717,7 @@ model PriceWatch {
   updated_at DateTime @updatedAt @db.Timestamp(0)
 
   @@unique([product_id, variant_id, user_id])
-  @@map("priceWatchs")
+  @@map("alerts")
 }
 
 model OfferHistory {
@@ -747,7 +740,7 @@ model OfferHistory {
   @@map("offerHistories")
 }
 
-model ProductPriceChart {
+model ProductPriceHistory {
   id Int @id @default(autoincrement())
 
   product_id Int
@@ -763,6 +756,7 @@ model ProductPriceChart {
 
   @@unique([product_id, date])
   @@index([product_id])
+  @@map("productPrice")
 }
 
 enum OfferHistoryType {

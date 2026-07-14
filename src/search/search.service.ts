@@ -8,15 +8,7 @@ import { SortTitles } from 'src/common/constants/sort.constant';
 export class SearchService {
   constructor(private prisma: PrismaService) {}
 
-  async searchShop(
-    limit: number,
-    page: number,
-    shop_name?: string,
-    is_available?: boolean,
-    sort?: SearchSortEnum,
-    price_gt?: number,
-    price_lt?: number,
-  ) {
+  async searchShop(limit: number, page: number, shop_name?: string, is_available?: boolean, sort?: SearchSortEnum, price_gt?: number, price_lt?: number) {
     const shop = await this.prisma.shop.findFirst({
       where: {
         shop_name: {
@@ -171,19 +163,7 @@ export class SearchService {
     };
   }
 
-  async searchProduct(
-    page: number,
-    limit: number,
-    query?: string,
-    shop_type?: string,
-    stock_status?: string,
-    is_available?: boolean,
-    sort?: SearchSortEnum,
-    price_gt?: number,
-    price_lt?: number,
-    brand_id?: number,
-    specifications?: Record<string, string[]>,
-  ) {
+  async searchProduct(page: number, limit: number, query?: string, shop_type?: string, stock_status?: string, is_available?: boolean, sort?: SearchSortEnum, price_gt?: number, price_lt?: number, brand_id?: number, specifications?: Record<string, string[]>) {
     const where: Prisma.ProductWhereInput = {};
     if (query) {
       where.OR = [
@@ -336,9 +316,7 @@ export class SearchService {
       })),
     }));
 
-    const prices = products.flatMap((product) =>
-      product.offers.map((offer) => Number(offer.price)),
-    );
+    const prices = products.flatMap((product) => product.offers.map((offer) => Number(offer.price)));
 
     const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
 
@@ -469,20 +447,7 @@ export class SearchService {
     };
   }
 
-  async searchCategory(
-    page: number,
-    limit: number,
-    shop_type?: string,
-    stock_status?: string,
-    is_available?: boolean,
-    sort?: SearchSortEnum,
-    price_gt?: number,
-    price_lt?: number,
-    query?: string,
-    category_id?: number,
-    brand_id?: number,
-    specifications?: Record<string, string[]>,
-  ) {
+  async searchCategory(page: number, limit: number, shop_type?: string, stock_status?: string, is_available?: boolean, sort?: SearchSortEnum, price_gt?: number, price_lt?: number, query?: string, category_id?: number, brand_id?: number, specifications?: Record<string, string[]>) {
     const category = await this.prisma.category.findUnique({
       where: {
         id: category_id,
@@ -647,9 +612,7 @@ export class SearchService {
       })),
     }));
 
-    const prices = products.flatMap((product) =>
-      product.offers.map((offer) => Number(offer.price)),
-    );
+    const prices = products.flatMap((product) => product.offers.map((offer) => Number(offer.price)));
 
     const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
 
@@ -762,64 +725,15 @@ export class SearchService {
     };
   }
 
-  async search(
-    {
-      sort,
-      type,
-      is_available,
-      limit,
-      page,
-      query,
-      price_gt,
-      shop_type,
-      stock_status,
-      price_lt,
-      brand_id,
-      category_id,
-    }: SearchDto,
-    specifications?: Record<string, string[]>,
-  ) {
+  async search({ sort, type, is_available, limit, page, query, price_gt, shop_type, stock_status, price_lt, brand_id, category_id }: SearchDto, specifications?: Record<string, string[]>) {
     if (type === SearchTypeEnum.shop) {
-      return this.searchShop(
-        limit,
-        page,
-        query,
-        is_available,
-        sort,
-        price_gt,
-        price_lt,
-      );
+      return this.searchShop(limit, page, query, is_available, sort, price_gt, price_lt);
     }
     if (type === SearchTypeEnum.product) {
-      return this.searchProduct(
-        page,
-        limit,
-        query,
-        shop_type,
-        stock_status,
-        is_available,
-        sort,
-        price_gt,
-        price_lt,
-        brand_id,
-        specifications,
-      );
+      return this.searchProduct(page, limit, query, shop_type, stock_status, is_available, sort, price_gt, price_lt, brand_id, specifications);
     }
     if (type === SearchTypeEnum.category) {
-      return this.searchCategory(
-        page,
-        limit,
-        shop_type,
-        stock_status,
-        is_available,
-        sort,
-        price_gt,
-        price_lt,
-        query,
-        category_id,
-        brand_id,
-        specifications,
-      );
+      return this.searchCategory(page, limit, shop_type, stock_status, is_available, sort, price_gt, price_lt, query, category_id, brand_id, specifications);
     }
   }
 

@@ -1,32 +1,13 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import {
-  ChangeBlockStatusDto,
-  ChangeBlockStatusEnum,
-  CreateLocationDto,
-} from './offline-shop.dto';
-import {
-  BusinessLicenseType,
-  ContactType,
-  DayOfWeek,
-  Prisma,
-  VerificationSection,
-} from '@prisma/client';
+import { ChangeBlockStatusDto, ChangeBlockStatusEnum, CreateLocationDto } from './offline-shop.dto';
+import { BusinessLicenseType, ContactType, DayOfWeek, Prisma, VerificationSection } from '@prisma/client';
 
 @Injectable()
 export class OfflineShopService {
   constructor(private prisma: PrismaService) {}
 
-  private async getShopMember(
-    shop_id: number,
-    user_id: number,
-    select?: Prisma.ShopSelect,
-  ) {
+  private async getShopMember(shop_id: number, user_id: number, select?: Prisma.ShopSelect) {
     const shop = await this.prisma.shop.findUnique({
       where: {
         id: shop_id,
@@ -63,16 +44,10 @@ export class OfflineShopService {
       },
     });
 
-    const verificationMap = new Map(
-      shop.shopVerifications.map((item) => [
-        item.section,
-        item.status.toLowerCase(),
-      ]),
-    );
+    const verificationMap = new Map(shop.shopVerifications.map((item) => [item.section, item.status.toLowerCase()]));
 
     const result = Object.values(VerificationSection).reduce((acc, section) => {
-      acc[`${section.toLowerCase()}_status`] =
-        verificationMap.get(section) ?? 'pending_filling';
+      acc[`${section.toLowerCase()}_status`] = verificationMap.get(section) ?? 'pending_filling';
 
       return acc;
     }, {});
@@ -88,10 +63,7 @@ export class OfflineShopService {
     return { status: shop.is_active };
   }
 
-  async changeActiveStatus(
-    { new_status, shop_id }: ChangeBlockStatusDto,
-    user_id: number,
-  ) {
+  async changeActiveStatus({ new_status, shop_id }: ChangeBlockStatusDto, user_id: number) {
     const shop = await this.getShopMember(shop_id, user_id);
 
     await this.prisma.shop.update({
@@ -175,17 +147,7 @@ export class OfflineShopService {
     };
   }
 
-  async createLocation(
-    user_id: number,
-    {
-      address,
-      city_id,
-      latitude,
-      longitude,
-      province_id,
-      shop_id,
-    }: CreateLocationDto,
-  ) {
+  async createLocation(user_id: number, { address, city_id, latitude, longitude, province_id, shop_id }: CreateLocationDto) {
     const shop = await this.getShopMember(shop_id, user_id, {
       id: true,
       address: true,
@@ -326,9 +288,7 @@ export class OfflineShopService {
         },
       },
     });
-    const phone = shop.shopContacts.find(
-      (item) => item.type === ContactType.PHONE,
-    );
+    const phone = shop.shopContacts.find((item) => item.type === ContactType.PHONE);
 
     const messengers = shop.shopContacts
       .filter((item) => item.type === ContactType.MESSENGER)
@@ -458,9 +418,7 @@ export class OfflineShopService {
       throw new NotFoundException('shop not found');
     }
 
-    const currentMember = shop.shopMembers.find(
-      (member) => member.user_id === user_id,
-    );
+    const currentMember = shop.shopMembers.find((member) => member.user_id === user_id);
 
     if (!currentMember) {
       throw new ForbiddenException('you are not a member of this shop');
@@ -490,9 +448,7 @@ export class OfflineShopService {
 
         is_current_user: member.user_id === user_id,
 
-        can_remove: currentMember.is_owner
-          ? member.user_id !== user_id
-          : member.user_id === user_id,
+        can_remove: currentMember.is_owner ? member.user_id !== user_id : member.user_id === user_id,
 
         is_deleted: member.is_deleted,
       };

@@ -11,11 +11,15 @@ import { LocationModule } from './location/location.module';
 import { SearchModule } from './search/search.module';
 import { ProductModule } from './product/product.module';
 import { PrismaModule } from './prisma/prisma.module';
-import { AnalyticsModule } from './analytics/analytics.module';
 import { PanelModule } from './panel/panel.module';
+import { AlertModule } from './alert/alert.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     AuthModule,
     FavoriteModule,
     ShopModule,
@@ -28,7 +32,7 @@ import { PanelModule } from './panel/panel.module';
     SearchModule,
     ProductModule,
     PrismaModule,
-    AnalyticsModule,
+    AlertModule,
     PanelModule,
   ],
 })

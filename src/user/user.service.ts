@@ -63,32 +63,6 @@ export class UserService {
     };
   }
 
-  async listFavorites(user_id: number) {
-    const favorites = await this.prisma.favorite.findMany({
-      where: { user_id },
-      select: {
-        product_id: true,
-      },
-    });
-    return favorites;
-  }
-
-  async listWatchs(user_id: number) {
-    const watchs = await this.prisma.priceWatch.findMany({
-      where: {
-        user_id,
-      },
-      select: {
-        product_id: true,
-        watch_price: true,
-        created_at: true,
-        disabled: true,
-        watch_availability: true,
-      },
-    });
-    return watchs;
-  }
-
   async selectCity({ city_id }: UserSelectCity, user_id: number) {
     await this.prisma.user.update({
       where: {

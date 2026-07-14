@@ -8,7 +8,7 @@ export class SendCodeDto {
 }
 
 export class VerifyCodeDto extends SendCodeDto {
-  @ApiProperty( )
+  @ApiProperty()
   @IsNotEmpty()
   @IsString()
   code: string;

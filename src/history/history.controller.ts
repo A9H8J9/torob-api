@@ -4,7 +4,7 @@ import { JwtAuthGuard } from 'src/auth/auth.guard';
 import { CreateViewDto } from './history.dto';
 
 @UseGuards(JwtAuthGuard)
-@Controller('histories')
+@Controller('users/me/histories')
 export class HistoryController {
   constructor(private historyService: HistoryService) {}
 

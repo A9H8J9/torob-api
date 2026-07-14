@@ -13,16 +13,6 @@ export class UserController {
     return await this.userService.me(request.user.userId);
   }
 
-  @Get('me/favorites')
-  async listFavorites(@Req() request) {
-    return await this.userService.listFavorites(request.user.userId);
-  }
-
-  @Get('me/watchs')
-  async listWatchs(@Req() request) {
-    return await this.userService.listWatchs(request.user.userId);
-  }
-
   @Post('me/select-city')
   async selectCity(@Body() data: UserSelectCity, @Req() request) {
     return await this.userService.selectCity(data, request.user.userId);

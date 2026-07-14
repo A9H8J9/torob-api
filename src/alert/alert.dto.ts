@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsBoolean, IsInt, IsNotEmpty, IsOptional } from 'class-validator';
 
-export class CreateAnalyticsDto {
+export class CreateAlertDto {
   @ApiProperty()
   @IsNotEmpty()
   @IsInt()
@@ -23,7 +23,7 @@ export class CreateAnalyticsDto {
   watch_availability: boolean;
 }
 
-export class RemoveAnalyticsDto {
+export class RemoveAlertDto {
   @ApiProperty()
   @IsNotEmpty()
   @IsInt()

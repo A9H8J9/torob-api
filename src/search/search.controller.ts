@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Query,
-  Req,
-} from '@nestjs/common';
+import { Controller, Get, Post, Query, Req } from '@nestjs/common';
 import { SearchService } from './search.service';
 import { SearchDto } from './search.dto';
 
@@ -13,10 +7,7 @@ export class SearchController {
   constructor(private searchService: SearchService) {}
 
   @Get('search')
-  async search(
-    @Query() data: SearchDto,
-    @Query() query: Record<string, string>,
-  ) {
+  async search(@Query() data: SearchDto, @Query() query: Record<string, string>) {
     const specifications: Record<string, string[]> = {};
 
     Object.keys(query).forEach((key) => {

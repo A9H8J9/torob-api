@@ -1,17 +1,24 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateAnalyticsDto, RemoveAnalyticsDto } from './analytics.dto';
+import { CreateAlertDto, RemoveAlertDto } from './alert.dto';
 
 @Injectable()
-export class AnalyticsService {
+export class AlertService {
   constructor(private prisma: PrismaService) {}
 
-  async all(user_id: number) {
-    const watchs = await this.prisma.priceWatch.findMany({
+  async all(user_id: number, only_ids: boolean) {
+    if (only_ids) {
+      const alerts = await this.prisma.alert.findMany({
+        where: {
+          user_id,
+        },
+        select: {
+          product_id: true,
+        },
+      });
+      return alerts;
+    }
+    const alerts = await this.prisma.alert.findMany({
       where: {
         user_id,
       },
@@ -27,17 +34,15 @@ export class AnalyticsService {
         },
       },
     });
-    return watchs;
+    return alerts;
   }
 
-  async create(userId: number, dto: CreateAnalyticsDto) {
+  async create(userId: number, dto: CreateAlertDto) {
     const hasPrice = dto.watch_price != null;
     const hasAvailability = dto.watch_availability === true;
 
     if (hasPrice === hasAvailability) {
-      throw new BadRequestException(
-        'choose either watch_price or watch_availability',
-      );
+      throw new BadRequestException('choose either watch_price or watch_availability');
     }
 
     const product = await this.prisma.product.findUnique({
@@ -62,9 +67,7 @@ export class AnalyticsService {
         throw new BadRequestException('variant_id is required');
       }
 
-      const variant = product.productVariants.find(
-        (item) => item.id === dto.variant_id,
-      );
+      const variant = product.productVariants.find((item) => item.id === dto.variant_id);
 
       if (!variant) {
         throw new NotFoundException('variant not found');
@@ -95,12 +98,10 @@ export class AnalyticsService {
     }
 
     if (hasPrice && dto.watch_price! >= Number(offer.price)) {
-      throw new BadRequestException(
-        'watch price must be lower than current price',
-      );
+      throw new BadRequestException('watch price must be lower than current price');
     }
 
-    await this.prisma.priceWatch.upsert({
+    await this.prisma.alert.upsert({
       where: {
         product_id_variant_id_user_id: {
           product_id: dto.product_id,
@@ -127,11 +128,8 @@ export class AnalyticsService {
     };
   }
 
-  async remove(
-    user_id: number,
-    { product_id, variant_id }: RemoveAnalyticsDto,
-  ) {
-    const watch = await this.prisma.priceWatch.findFirst({
+  async remove(user_id: number, { product_id, variant_id }: RemoveAlertDto) {
+    const watch = await this.prisma.alert.findFirst({
       where: {
         user_id,
         product_id,
@@ -146,7 +144,7 @@ export class AnalyticsService {
       throw new NotFoundException('price watch not found');
     }
 
-    await this.prisma.priceWatch.delete({
+    await this.prisma.alert.delete({
       where: {
         id: watch.id,
       },

@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateReportDto } from './report.dto';
 import { ShopType } from '@prisma/client';
@@ -57,10 +53,7 @@ export class ReportService {
     return this.buildTree(reasons);
   }
 
-  async create(
-    user_id: number,
-    { product_id, report_reason_id, shop_id, description }: CreateReportDto,
-  ) {
+  async create(user_id: number, { product_id, report_reason_id, shop_id, description }: CreateReportDto) {
     const reason = await this.prisma.reportReason.findUnique({
       where: { id: report_reason_id },
     });

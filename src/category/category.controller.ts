@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  ParseIntPipe,
-  Post,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { JwtAuthGuard } from 'src/auth/auth.guard';
 
@@ -26,13 +18,7 @@ export class CategoryController {
 
   @UseGuards(JwtAuthGuard)
   @Post(':category_id/log')
-  async createLog(
-    @Req() request,
-    @Param('category_id', ParseIntPipe) category_id: number,
-  ) {
-    return await this.categoryService.createLog(
-      request.user.userId,
-      category_id,
-    );
+  async createLog(@Req() request, @Param('category_id', ParseIntPipe) category_id: number) {
+    return await this.categoryService.createLog(request.user.userId, category_id);
   }
 }

@@ -27,7 +27,7 @@ export class ProductService {
     return product;
   }
 
-  async priceHistory(product_id: number, page: number, limit: number) {
+  async offerHistory(product_id: number, page: number, limit: number) {
     const [items, total] = await this.prisma.$transaction([
       this.prisma.offerHistory.findMany({
         where: {
@@ -104,7 +104,7 @@ export class ProductService {
     };
   }
 
-  async priceChart(product_id: number) {
+  async priceHistory(product_id: number) {
     const product = await this.prisma.product.findUnique({
       where: {
         id: product_id,
@@ -118,7 +118,7 @@ export class ProductService {
       throw new NotFoundException('product not found');
     }
 
-    const chart = await this.prisma.productPriceChart.findMany({
+    const priceHistory = await this.prisma.productPriceHistory.findMany({
       where: {
         id: product.id,
       },
@@ -128,20 +128,18 @@ export class ProductService {
     });
 
     return {
-      labels: chart.map((item) =>
-        dayjs(item.date).calendar('jalali').locale('fa').format('D MMMM YYYY'),
-      ),
+      labels: priceHistory.map((item) => dayjs(item.date).calendar('jalali').locale('fa').format('D MMMM YYYY')),
       dataSets: [
         {
           label: 'میانگین قیمت',
-          entries: chart.map((item, index) => ({
+          entries: priceHistory.map((item, index) => ({
             val: item.avg_price,
             i: index,
           })),
         },
         {
           label: 'کمترین قیمت',
-          entries: chart.map((item, index) => ({
+          entries: priceHistory.map((item, index) => ({
             val: item.min_price,
             i: index,
           })),
