@@ -619,7 +619,7 @@ export class SearchService {
     const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
     return {
       type: 'category_product',
-      title: `${category.title} (${category.slug})`,
+      title: `${category.title}`,
       data: products,
       similar_categories,
       categories: categories,
@@ -772,6 +772,7 @@ export class SearchService {
         take: 2,
         select: {
           shop_name: true,
+          shop_logo: true
         },
       }),
 
@@ -800,6 +801,7 @@ export class SearchService {
     const shopResult = shops.map((s) => ({
       type: 'shop',
       text: s.shop_name,
+      logo: s.shop_logo,
       is_history: false,
     }));
 
